@@ -70,14 +70,14 @@ func CreateUser(
 ) bool {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading the body of request.", 400)
+		http.Error(w, "Error reading the body of request.", http.StatusBadRequest)
 		return false
 	}
 	defer r.Body.Close()
 
 	user := BodyToUser(body)
 	if user == nil {
-		http.Error(w, "Error wrapping the body to user.", 400)
+		http.Error(w, "Error wrapping the body to user.", http.StatusBadRequest)
 		return false
 	}
 
@@ -89,7 +89,7 @@ func CreateUser(
 	)
 
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error creating the user in the database. " + err.Error()))
 		return false
 	}
@@ -100,7 +100,7 @@ func CreateUser(
 	resJSON := GetResponseDataJSON(resData)
 
 	if resJSON == nil {
-		http.Error(w, "Error converting the response data to JSON. ", 500)
+		http.Error(w, "Error converting the response data to JSON. ", http.StatusInternalServerError)
 		return false
 	}
 
@@ -121,5 +121,5 @@ func HandleUser(w http.ResponseWriter, r *http.Request, database *sql.DB) {
 		return
 	}
 
-	http.Error(w, "Method not allowed to /user", 405)
+	http.Error(w, "Method not allowed to /user", http.StatusMethodNotAllowed)
 }
