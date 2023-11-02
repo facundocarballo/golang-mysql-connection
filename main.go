@@ -32,7 +32,9 @@ func main() {
 	}
 
 	// Define handlers to endpoints
-	http.HandleFunc("/user", types.HandleUser)
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		types.HandleUser(w, r, db)
+	})
 
 	println("Server listening on port" + SERVER_PORT + " ...")
 	http.ListenAndServe(SERVER_PORT, nil)
