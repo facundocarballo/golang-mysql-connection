@@ -3,7 +3,10 @@ package types
 import (
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
+
+	"github.com/facundocarballo/golang-mysql-connection/db"
 )
 
 type User struct {
@@ -13,15 +16,20 @@ type User struct {
 	Password string `json:"password"`
 }
 
-func (u User) UpdateUser() bool {
+func BodyToUser(body []byte) *User {
+	if len(body) == 0 {
+		return nil
+	}
 
+	var user User
+	err := json.Unmarshal(body, &user)
+	if err != nil {
+		return nil
+	}
+
+	return &user
 }
 
-func (u User) DeleteUser() bool {
-
-}
-
-// "Static" functions
 func GetAllUsers(w http.ResponseWriter, database *sql.DB) []User {
 	rows, err := database.Query("SELECT id, name, email FROM User")
 	if err != nil {
@@ -51,32 +59,67 @@ func GetAllUsers(w http.ResponseWriter, database *sql.DB) []User {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(users)
+
+	return users
 }
 
-func GetUser(id int) User {
+func CreateUser(
+	w http.ResponseWriter,
+	r *http.Request,
+	database *sql.DB,
+) bool {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading the body of request.", 400)
+		return false
+	}
+	defer r.Body.Close()
 
-}
+	user := BodyToUser(body)
+	if user == nil {
+		http.Error(w, "Error wrapping the body to user.", 400)
+		return false
+	}
 
-func CreateUser(name string, email string, password string) User {
+	_, err = database.Exec(
+		db.INSERT_USER_STATEMENT,
+		user.Name,
+		user.Email,
+		user.Password,
+	)
 
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("Error creating the user in the database. " + err.Error()))
+		return false
+	}
+
+	resData := ResponseData{
+		Message: "SUCCESFULL POST REQUEST",
+	}
+	resJSON := GetResponseDataJSON(resData)
+
+	if resJSON == nil {
+		http.Error(w, "Error converting the response data to JSON. ", 500)
+		return false
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(*resJSON)
+
+	return true
 }
 
 func HandleUser(w http.ResponseWriter, r *http.Request, database *sql.DB) {
-	if r.Method == "POST" {
-		// Get the user data
-		// Post the new user
+	if r.Method == http.MethodPost {
+		CreateUser(w, r, database)
 		return
 	}
 
-	if r.Method == "GET" {
-		// Check if pass parameters as id? -> GetUser : GetAllUsers
+	if r.Method == http.MethodGet {
+		GetAllUsers(w, database)
+		return
 	}
 
-	if r.Method == "UPDATE" {
-		// Check params to update user.
-	}
-
-	if r.Method == "DELETE" {
-		// Check params to delete user.
-	}
+	http.Error(w, "Method not allowed to /user", 405)
 }
