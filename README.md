@@ -13,3 +13,13 @@ git init
 ```bash
     go get github.com/joho/godotenv
 ```
+4. Install Go-SQL-Driver
+```bash
+    go get github.com/go-sql-driver/mysql
+```
+> It's important to know that you will have to import this library to connect your golang server with your mysql database. Normally using like this example.
+```golang
+    import (
+        _ "github.com/go-sql-driver/mysql"
+    )
+```
