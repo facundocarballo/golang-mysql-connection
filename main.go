@@ -20,20 +20,21 @@ func main() {
 	}
 
 	// Open connection to Database
-	db, err := sql.Open("mysql", db.GetDSN())
+	database, err := sql.Open("mysql", db.GetDSN())
 	if err != nil {
 		panic(err.Error())
 	}
-	defer db.Close()
+	defer database.Close()
 
 	// Check success connection to Database
-	if err = db.Ping(); err != nil {
+	err = database.Ping()
+	if err != nil {
 		panic(err.Error())
 	}
 
 	// Define handlers to endpoints
 	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		types.HandleUser(w, r, db)
+		types.HandleUser(w, r, database)
 	})
 
 	println("Server listening on port" + SERVER_PORT + " ...")
